@@ -6,6 +6,8 @@ class OAuth {
 
     private $clientId;
 
+    private $clientSecret;
+
     private $authorizeEndpoint;
 
     private $accessEndpoint;
@@ -23,9 +25,10 @@ class OAuth {
      * @param mixed $authorizeEndpoint OAuth2 authorization endpoint
      * @param mixed $accessEndpoint OAuth2 access endoint
      */
-    public function __construct($clientId, $authorizeEndpoint, $accessEndpoint)
+    public function __construct($clientId, $clientSecret, $authorizeEndpoint, $accessEndpoint)
     {
         $this->clientId = $clientId;
+        $this->clientSecret = $clientSecret;
         $this->authorizeEndpoint = $authorizeEndpoint;
         $this->accessEndpoint = $accessEndpoint;
     }
@@ -67,15 +70,19 @@ class OAuth {
      * @param mixed $code
      * @param array $optionalParams
      */
-    public function accessToken($code, $optionalParams=array())
+    public function getAccessToken($code, $optionalParams=array())
     {
         $params = array(
             'grant_type' => 'authorization_code',
             'code' => $code,
+            'client_id' => $this->clientId,
+            'client_secret' => $this->clientSecret
         );
         $params = array_merge($params, $optionalParams);
 
-        $this->_call('POST', $params, null);
+        $accessTokenResponse = $this->_call('POST', $params, null);
+        echo $accessTokenResponse;
+        exit;
     }
 
     /**
@@ -94,9 +101,16 @@ class OAuth {
         $result = curl_exec($ch);
         $errno = curl_errno($ch);
         $error = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
 
         // TODO: Handle errors
-        return $result;
+        if ($error || $errno || $httpCode != 200) {
+            echo 'error';
+            exit;
+        }
+
+        return substr($result, $headerSize);
     }
 
     /**
