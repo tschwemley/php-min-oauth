@@ -147,14 +147,7 @@ class OAuth {
 
         // TODO: Handle errors
         if ($error || $errno || $httpCode != 200) {
-            var_dump($error);
-            echo '<br/><br/>';
-            var_dump($errno);
-            echo '<br/><br/>';
-            var_dump($httpCode);
-            echo '<br/><br/>';
             echo 'error';
-            echo '<br/><br/><a href="http://oauth-dev.com">Click here</a>';
             exit;
         }
 
