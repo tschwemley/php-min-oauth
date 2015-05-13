@@ -22,8 +22,10 @@ class OAuth {
      * Constructor
      *
      * @param mixed $clientId client id for oauth connection
+     * @param mixed $clientSecret client secret for oauth connection
      * @param mixed $authorizeEndpoint OAuth2 authorization endpoint
      * @param mixed $accessEndpoint OAuth2 access endoint
+     * @param string $redirectUri optional redirect uri
      */
     public function __construct($clientId, $clientSecret, $authorizeEndpoint, $accessEndpoint, $redirectUri = null)
     {
@@ -37,10 +39,10 @@ class OAuth {
     /**
      * Get authorization URL and either return it or redirect to it.
      *
-     * @param boolean $redirect
+     * @param boolean $redirectToAuthUri
      * @param array $optionalParams
      *
-     * @return string|void
+     * @return string|void string of url if redirect false; else redirects to redirect uri
      */
     public function authorize($redirectToAuthUri=true, $optionalParams=array())
     {
@@ -51,6 +53,10 @@ class OAuth {
 
         if ($this->redirectUri) {
             $params['redirect_uri'] = $this->redirectUri;
+        }
+
+        if ($this->scope) {
+            $params['scope'] = $this->scope;
         }
 
         $params = array_merge($params, $optionalParams);
@@ -75,6 +81,8 @@ class OAuth {
      *
      * @param mixed $code
      * @param array $optionalParams
+     *
+     * @return string array token response
      */
     public function getAccessToken($code, $optionalParams=array())
     {
@@ -97,11 +105,33 @@ class OAuth {
     }
 
     /**
+     * Adds scopes for OAuth2 authorize request.
+     *
+     * @param array $scopes an array of scopes in the following format:
+     *  ['scope_1', 'scope_2', ..., 'scope_n']
+     *
+     * @return tschwemley\OAuth
+     */
+    public function addScopes($scopes)
+    {
+        $scopeStr = '';
+        foreach($scopes as $scope) {
+            $scopeStr .= "{$scope},";
+        }
+        $scopeStr = rtrim($scopeStr, ',');
+
+        $this->scope = urlencode($scopeStr);
+        return $this;
+    }
+
+    /**
      * Curls OAuth endpoint
      *
      * @param string $method
      * @param mixed $params
      * @param mixed $header
+     *
+     * @return string call result
      */
     private function _call($method, $params=null, $header=null)
     {
@@ -110,7 +140,6 @@ class OAuth {
         $this->_setCurlOpts($ch, $method, $params);
 
         $result = curl_exec($ch);
-        var_dump($result); exit;
         $errno = curl_errno($ch);
         $error = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -138,8 +167,6 @@ class OAuth {
      * @param mixed $ch
      * @param string $method
      * @param mixed $params
-     *
-     * @return void
      */
     private function _setCurlOpts($ch, $method, $params)
     {
