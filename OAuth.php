@@ -25,28 +25,34 @@ class OAuth {
      * @param mixed $authorizeEndpoint OAuth2 authorization endpoint
      * @param mixed $accessEndpoint OAuth2 access endoint
      */
-    public function __construct($clientId, $clientSecret, $authorizeEndpoint, $accessEndpoint)
+    public function __construct($clientId, $clientSecret, $authorizeEndpoint, $accessEndpoint, $redirectUri = null)
     {
         $this->clientId = $clientId;
         $this->clientSecret = $clientSecret;
         $this->authorizeEndpoint = $authorizeEndpoint;
         $this->accessEndpoint = $accessEndpoint;
+        $this->redirectUri = $redirectUri;
     }
 
     /**
-     * Get authorizatoin URL and either return it or redirect to it.
+     * Get authorization URL and either return it or redirect to it.
      *
      * @param boolean $redirect
-     * @param array|null $optionalParams
+     * @param array $optionalParams
      *
      * @return string|void
      */
-    public function authorize($redirect=true, $optionalParams=null)
+    public function authorize($redirectToAuthUri=true, $optionalParams=array())
     {
         $params = array(
             'response_type' => 'code',
             'client_id' => $this->clientId,
         );
+
+        if ($this->redirectUri) {
+            $params['redirect_uri'] = $this->redirectUri;
+        }
+
         $params = array_merge($params, $optionalParams);
 
         // Construct params string
@@ -57,7 +63,7 @@ class OAuth {
 
         $authorizeUri = $this->authorizeEndpoint . $paramsString;
 
-        if ($redirect) {
+        if ($redirectToAuthUri) {
             header("Location: $authorizeUri");
         } else {
             return $authorizeUri;
@@ -76,13 +82,18 @@ class OAuth {
             'grant_type' => 'authorization_code',
             'code' => $code,
             'client_id' => $this->clientId,
-            'client_secret' => $this->clientSecret
+            'client_secret' => $this->clientSecret,
         );
+
+        if ($this->redirectUri) {
+            $params['redirect_uri'] = $this->redirectUri;
+        }
+
         $params = array_merge($params, $optionalParams);
 
         $accessTokenResponse = $this->_call('POST', $params, null);
-        echo $accessTokenResponse;
-        exit;
+
+        return $accessTokenResponse;
     }
 
     /**
@@ -99,6 +110,7 @@ class OAuth {
         $this->_setCurlOpts($ch, $method, $params);
 
         $result = curl_exec($ch);
+        var_dump($result); exit;
         $errno = curl_errno($ch);
         $error = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -106,7 +118,14 @@ class OAuth {
 
         // TODO: Handle errors
         if ($error || $errno || $httpCode != 200) {
+            var_dump($error);
+            echo '<br/><br/>';
+            var_dump($errno);
+            echo '<br/><br/>';
+            var_dump($httpCode);
+            echo '<br/><br/>';
             echo 'error';
+            echo '<br/><br/><a href="http://oauth-dev.com">Click here</a>';
             exit;
         }
 
